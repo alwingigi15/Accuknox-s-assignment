@@ -1,0 +1,59 @@
+1.Explaining how the highlighted constructs work?
+
+*Channels (make(chan func(), 10))
+Channels in Go are used to communicate between goroutines.
+make(chan func(), 10) creates a buffered channel that can hold up to 10 elements. Each element is a function with no parameters and no return value (func()).
+
+*Goroutines (go func() {...}())
+Goroutines are lightweight threads managed by the Go runtime.
+go func() {...}() starts a new goroutine that executes the anonymous function.
+
+*For loop (for i := 0; i < 4; i++ { ... })
+This loop starts 4 goroutines. Each goroutine runs an infinite loop, taking functions from the cnp channel and executing them.
+
+*Range (for f := range cnp { ... })
+for f := range cnp is a loop that continuously receives values from the cnp channel until it is closed. Each received value is a function (f), which is then called with f().
+
+2.Giving use-cases of what these constructs could be used for?
+
+
+*Channels are used for safe communication between goroutines, avoiding explicit locks.
+Use-cases: pipeline patterns, worker pools, and signaling events.
+
+
+*Goroutines are used to perform concurrent tasks.
+Use-cases: handling multiple connections, performing I/O operations, and parallel processing.
+
+
+*Buffered channels allow sending a predefined number of values without needing an immediate receiver.
+Use-cases: batching tasks, decoupling producers and consumers.
+
+3.What is the significance of the for loop with 4 iterations?
+
+The for loop with 4 iterations starts 4 separate goroutines, each waiting to receive and execute functions from the cnp channel. This creates a pool of workers that can process functions concurrently. The number 4 is likely chosen arbitrarily or based on expected concurrency needs, such as the number of available CPU cores.
+
+4.What is the significance of make(chan func(), 10)?
+
+Creating cnp with make(chan func(), 10) initializes a buffered channel with a capacity of 10. This means up to 10 function values can be sent to the channel without blocking. This buffer allows the main goroutine to enqueue multiple functions quickly without waiting for the worker goroutines to pick them up.
+
+5.Why is “HERE1” not getting printed?Why is “HERE1” not getting printed?
+package main
+
+import "fmt"
+
+func main() {
+    cnp := make(chan func(), 10)
+    for i := 0; i < 4; i++ {
+        go func() {
+            for f := range cnp {
+                f()
+            }
+        }()
+    }
+    cnp <- func() {
+        fmt.Println("HERE1")
+    }
+    fmt.Println("Hello")
+}
+
+HERE1 is Not Printed because,Immediate Exit of Main Goroutine,After sending the function to the channel and printing "Hello", the main goroutine exits and The Go runtime will terminate the program when the main goroutine finishes, regardless of whether other goroutines have completed their work and also time issue
